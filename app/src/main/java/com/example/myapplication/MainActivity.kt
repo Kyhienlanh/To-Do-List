@@ -10,56 +10,65 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var adapter: TaskAdapter
+    private lateinit var ds: MutableList<Outdata>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+
+        // Khởi tạo danh sách gốc
+        ds = mutableListOf()
+        adapter = TaskAdapter(ds) { task ->
+            removeTask(task)
+
         }
 
-        // Dữ liệu ban đầu
-        var ds = mutableListOf<Outdata>()
-
-        val adapter = TaskAdapter(ds)  // Khởi tạo adapter một lần
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerview)
-
         recyclerView.adapter = adapter
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
 
         val editText = findViewById<EditText>(R.id.editTextText)
         val button = findViewById<Button>(R.id.button)
+        val radioGroup = findViewById<RadioGroup>(R.id.radioGroup)
 
-        // Thêm công việc mới
+
         button.setOnClickListener {
             val taskName = editText.text.toString()
             if (taskName.isNotEmpty()) {
                 val task = Outdata(taskName, false)
                 ds.add(task)
-                adapter.notifyDataSetChanged()  // Cập nhật RecyclerView
-                editText.text.clear()  // Xóa nội dung EditText
+                updateDisplayedTasks(radioGroup)
+                editText.text.clear()
             }
         }
-
-        val radioGroup = findViewById<RadioGroup>(R.id.radioGroup)
 
         radioGroup.setOnCheckedChangeListener { _, checkedId ->
-            when (checkedId) {
-                R.id.radioButton -> {
-                    adapter.ds = ds
-                }
-                R.id.radioButton2 -> {
-                    adapter.ds = ds.filter { !it.isCompleted }.toMutableList()
-                }
-                R.id.radioButton3 -> {
-                    adapter.ds = ds.filter { it.isCompleted }.toMutableList()
-                }
-            }
-            adapter.notifyDataSetChanged()
+            updateDisplayedTasks(radioGroup)
         }
+    }
+
+    private fun removeTask(task: Outdata) {
+        ds.remove(task)
+        adapter.ds.remove(task)
+        adapter.notifyDataSetChanged()
+    }
+
+    private fun updateDisplayedTasks(radioGroup: RadioGroup) {
+        when (radioGroup.checkedRadioButtonId) {
+            R.id.radioButton -> {
+                adapter.ds = ds.toMutableList()
+            }
+            R.id.radioButton2 -> {
+                adapter.ds = ds.filter { !it.isCompleted }.toMutableList()
+            }
+            R.id.radioButton3 -> {
+                adapter.ds = ds.filter { it.isCompleted }.toMutableList()
+            }
+        }
+        adapter.notifyDataSetChanged()
     }
 }
